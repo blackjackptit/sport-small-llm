@@ -106,7 +106,7 @@ def main():
 
     # Create estimator
     estimator = PyTorch(
-        entry_point="train_small.py",
+        entry_point="train_small_model.py",
         source_dir="sagemaker",
         role=role,
         instance_type=args.instance_type,

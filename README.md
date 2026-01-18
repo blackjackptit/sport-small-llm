@@ -57,6 +57,24 @@ The model uses a decoder-only Transformer architecture with the following compon
 | Medium | ~350M      | 24     | 16    | 1024| 2048    |
 | Large  | ~760M      | 24     | 16    | 1536| 4096    |
 
+### Architecture Diagram
+
+![Transformer Block](docs/architecture-transformer-block.png)
+
+**Full Model Flow:**
+
+![Full Model Flow](docs/architecture-full-model-flow.png)
+
+**Multi-Head Attention:**
+
+![Multi-Head Attention](docs/architecture-multi-head-attention.png)
+
+**SwiGLU Feed-Forward Network:**
+
+![SwiGLU FFN](docs/architecture-swiglu-ffn.png)
+
+For detailed architecture documentation, see [docs/architecture.md](docs/architecture.md).
+
 ## Project Structure
 
 ```
@@ -220,11 +238,13 @@ python sagemaker/launch_small_model.py \
 
 ```
 sagemaker/
-├── train_small.py        # Self-contained small model training
+├── train_small_model.py  # Self-contained small model training
 ├── train.py              # Full SageMaker entry point
 ├── launch_small_model.py # Quick launch for small model
 ├── launch_training.py    # Launch training jobs
 ├── prepare_data.py       # Upload data to S3
+├── deploy.py             # Deploy model to SageMaker endpoint
+├── inference.py          # Inference script for endpoint
 ├── config.py             # Instance & cost configurations
 └── requirements.txt      # Training dependencies
 ```
@@ -307,6 +327,56 @@ aws logs tail /aws/sagemaker/TrainingJobs --follow
 ```bash
 # Download model artifacts from S3
 aws s3 cp s3://your-bucket/sports-llm/output/model-final ./outputs/model-final --recursive
+```
+
+### Step 3: Deploy to SageMaker Endpoint
+
+```bash
+# Deploy the trained model to a real-time endpoint
+python sagemaker/deploy.py \
+    --model-dir outputs/sports-llm/checkpoint-final \
+    --s3-bucket your-bucket-name \
+    --endpoint-name sports-llm-endpoint \
+    --instance-type ml.g5.xlarge \
+    --role "arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole"
+```
+
+The deploy script will:
+1. Package the model with the inference script
+2. Upload to S3
+3. Create a SageMaker model
+4. Create an endpoint configuration
+5. Deploy (or update) the endpoint
+
+### Step 4: Test the Endpoint
+
+```python
+import boto3
+import json
+
+client = boto3.client('sagemaker-runtime', region_name='eu-central-1')
+
+response = client.invoke_endpoint(
+    EndpointName='sports-llm-endpoint',
+    ContentType='application/json',
+    Body=json.dumps({
+        'prompt': 'Bradford City',
+        'max_new_tokens': 100,
+        'temperature': 0.7
+    })
+)
+
+result = json.loads(response['Body'].read().decode())
+print(result['generated_text'])
+```
+
+### Delete Endpoint (to stop costs)
+
+```bash
+# Delete endpoint when done to avoid ongoing charges
+aws sagemaker delete-endpoint --endpoint-name sports-llm-endpoint
+aws sagemaker delete-endpoint-config --endpoint-config-name sports-llm-endpoint-config-*
+aws sagemaker delete-model --model-name sports-llm-endpoint-model-*
 ```
 
 ## Data Sources
