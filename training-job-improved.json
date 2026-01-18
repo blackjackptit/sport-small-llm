@@ -1,0 +1,44 @@
+{
+    "TrainingJobName": "sports-llm-small-20260117-195733",
+    "RoleArn": "arn:aws:iam::532391786224:role/service-role/AmazonSageMaker-ExecutionRole-20210507T071172",
+    "AlgorithmSpecification": {
+        "TrainingImage": "763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-training:2.1.0-gpu-py310-cu121-ubuntu20.04-sagemaker",
+        "TrainingInputMode": "File"
+    },
+    "HyperParameters": {
+        "max-steps": "5000",
+        "batch-size": "8",
+        "gradient-accumulation-steps": "4",
+        "learning-rate": "0.0001",
+        "warmup-steps": "200",
+        "logging-steps": "50",
+        "save-steps": "1000",
+        "max-seq-length": "512",
+        "vocab-size": "16000",
+        "sagemaker_program": "train_small.py",
+        "sagemaker_submit_directory": "s3://sagemaker-eu-central-1-532391786224/sports-llm/code/sourcedir.tar.gz"
+    },
+    "InputDataConfig": [
+        {
+            "ChannelName": "train",
+            "DataSource": {
+                "S3DataSource": {
+                    "S3DataType": "S3Prefix",
+                    "S3Uri": "s3://sagemaker-eu-central-1-532391786224/sports-llm/data/train",
+                    "S3DataDistributionType": "FullyReplicated"
+                }
+            }
+        }
+    ],
+    "OutputDataConfig": {
+        "S3OutputPath": "s3://sagemaker-eu-central-1-532391786224/sports-llm/output"
+    },
+    "ResourceConfig": {
+        "InstanceType": "ml.g5.2xlarge",
+        "InstanceCount": 1,
+        "VolumeSizeInGB": 50
+    },
+    "StoppingCondition": {
+        "MaxRuntimeInSeconds": 14400
+    }
+}
